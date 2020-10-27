@@ -52,8 +52,8 @@ function generateSchedule(date: DateTime): ScheduleEntry<DateTime>[] {
   }
 
   result.push({activity: 'Math Workshop', startTime: fromTime('10:15 AM'), live: mwf});
-
   result.push({activity: 'Lunch/Recess', startTime: fromTime('11:30 AM')});
+  result.push({activity: 'Social Studies', startTime: fromTime('12:30 PM')});
 
   const firstSpecial = 0;
   const special = SPECIALS_SCHEDULE[(firstSpecial + date.weekday - 1) % SPECIALS_SCHEDULE.length];
