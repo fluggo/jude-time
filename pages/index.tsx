@@ -72,7 +72,7 @@ function entryColor(index: number): string {
 const NEXT_UP_TIME = Duration.fromObject({minutes: 5});
 
 function ScheduleEntryName({entry}: {entry: ScheduleEntry<DateTime>}) {
-  return <>{entry.activity} <span className="live">LIVE</span></>;
+  return <>{entry.activity} {entry.live ? <span className="live">LIVE</span> : null}</>;
 }
 
 function RemainingTime({duration}: {duration: Duration}) {
