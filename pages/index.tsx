@@ -13,20 +13,6 @@ interface ScheduleEntry<DateType extends string | DateTime> {
   live?: boolean;
 }
 
-const TEST_SCHEDULE: ScheduleEntry<string>[] = [
-  { activity: 'Breakfast!', startTime: '7:20 AM' },
-  { activity: 'Morning Meeting', startTime: '7:40 AM' },
-  { activity: 'Writing Workshop', startTime: '8:10 AM' },
-  { activity: 'Reading Workshop', startTime: '9:00 AM' },
-  { activity: 'Catch-up', startTime: '9:45 AM' },
-  { activity: 'Math Workshop', startTime: '10:15 AM' },
-  { activity: 'Lunch/Recess', startTime: '11:30 AM' },
-  { activity: 'Social Studies', startTime: '12:30 PM' },
-  { activity: 'Music', startTime: '1:10 PM' },
-  { activity: 'Science', startTime: '1:55 PM' },
-  { activity: 'School is over!', startTime: '2:55 PM' },
-];
-
 const SPECIALS_SCHEDULE: ScheduleEntry<string>[] = [
   { activity: 'Music', startTime: '1:10 PM', live: true },
   { activity: 'P.E.', startTime: '1:10 PM', live: true },
