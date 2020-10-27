@@ -1,0 +1,51 @@
+@import 'node_modules/reset-css/sass/reset';
+
+body {
+  padding: 1em;
+  background-color: black;
+  color: white;
+}
+
+#timer {
+  width: 400px;
+  height: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 2em;
+  display: block;
+}
+
+#clock {
+  position: absolute;
+  font-size: 2rem;
+  padding: 0.25em;
+  border: 2px solid white;
+  border-radius: 0.25em;
+  right: 1em;
+}
+
+span.live {
+  font-size: 80%;
+  padding: 0.15em;
+  background-color: crimson;
+  border-radius: 0.25em;
+}
+
+#next-up {
+  text-align: center;
+  font-size: 3rem;
+  margin-top: 3rem;
+  padding: 0.5em;
+  border-top: 2px solid white;
+  border-bottom: 2px solid white;
+}
+
+#current-activity {
+  text-align: center;
+  font-size: 5rem;
+}
+
+#time-left {
+  text-align: center;
+  font-size: 3rem;
+}

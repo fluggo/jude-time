@@ -123,7 +123,9 @@ function HomePage() {
   });
 
   return <>
-    <svg width="400" height="400" style={ { display: 'block', marginLeft: 'auto', marginRight: 'auto', width: '400px' } }>
+    <div id="clock">{currentTime.toFormat('h:mm a')}</div>
+
+    <svg width="400" height="400" id="timer">
       <g transform="translate(200, 200)">
         <path fill={entryColor(currentEntryIndex)} d={arc()}></path>
       </g>
@@ -131,16 +133,13 @@ function HomePage() {
 
     { remainingTime ?
       <>
-        <p style={ { fontSize: '72px', textAlign: 'center' }}>
-          <ScheduleEntryName entry={currentEntry}></ScheduleEntryName>
-          <br></br>
-          <RemainingTime duration={remainingTime}></RemainingTime>
-        </p>
         { +remainingTime < +NEXT_UP_TIME ?
-          <p className="next-up"><span style={{color: entryColor(currentEntryIndex + 1)}}>⬤</span> Next up: <ScheduleEntryName entry={schedule[currentEntryIndex + 1]}></ScheduleEntryName></p> :
+        <div id="current-activity"><ScheduleEntryName entry={currentEntry}></ScheduleEntryName></div>
+        <div id="time-left"><RemainingTime duration={remainingTime}></RemainingTime></div>
+          <p id="next-up"><span style={{color: entryColor(currentEntryIndex + 1)}}>⬤</span> Next up: <ScheduleEntryName entry={schedule[currentEntryIndex + 1]}></ScheduleEntryName></p> :
           null }
       </> :
-      <p style={ {textAlign: 'center', fontSize: '72px' }}>School has ended!</p> }
+      <p id="current-activity">School has ended!</p> }
   </>;
 }
 
