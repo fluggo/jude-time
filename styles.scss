@@ -6,6 +6,40 @@ body {
   color: white;
 }
 
+#app-container {
+  display: flex;
+}
+
+#schedule-pane {
+  width: 20rem;
+}
+
+.schedule-entry {
+  border-top: 1px solid white;
+  display: flex;
+}
+
+.schedule-progress {
+  width: 1em;
+}
+
+.schedule-time-text {
+  font-size: 80%;
+  width: 5em;
+  padding: 0.25em;
+}
+
+.schedule-entry-text {
+  padding: 0.25em;
+  flex: 1;
+}
+
+#timer-pane {
+  padding-left: 2rem;
+  padding-right: 2rem;
+  flex: 1;
+}
+
 #timer {
   width: 400px;
   height: 400px;
@@ -17,7 +51,7 @@ body {
 
 #clock {
   position: absolute;
-  font-size: 2rem;
+  font-size: 3rem;
   padding: 0.25em;
   border: 2px solid white;
   border-radius: 0.25em;

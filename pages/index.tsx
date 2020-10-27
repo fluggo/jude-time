@@ -81,6 +81,30 @@ function RemainingTime({duration}: {duration: Duration}) {
       (duration.hours || 0 === 0) ? 'Less than one minute' : ''} left</>;
 }
 
+function Schedule({schedule, time}: {schedule: ScheduleEntry<DateTime>[], time: DateTime}) {
+  return <>
+    {schedule.map((entry, i) => {
+      const nextEntry = schedule[i + 1];
+      const duration = nextEntry ? nextEntry.startTime.diff(entry.startTime) : Duration.fromObject({hours: 1});
+      let timeSpent = time.diff(entry.startTime);
+
+      if(+timeSpent < 0)
+        timeSpent = Duration.fromMillis(0);
+
+      if(+timeSpent > +duration)
+        timeSpent = duration;
+
+      return <div className="schedule-entry" key={i} style={{height: `${duration.as('minutes') * 1.5}px`}}>
+        <div className="schedule-progress">
+          <div style={{backgroundColor: entryColor(i), height: `${timeSpent.as('minutes') * 1.5}px`}}></div>
+        </div>
+        <div className="schedule-time-text">{entry.startTime.toFormat('h:mm a')}</div>
+        <div className="schedule-entry-text"><ScheduleEntryName entry={entry}></ScheduleEntryName></div>
+      </div>;
+    })}
+  </>;
+}
+
 function HomePage() {
   const [currentTime, setCurrentTime] = useState(DateTime.local());
   const [currentEntryIndex, setCurrentEntryIndex] = useState(0);
@@ -125,21 +149,26 @@ function HomePage() {
   return <>
     <div id="clock">{currentTime.toFormat('h:mm a')}</div>
 
-    <svg width="400" height="400" id="timer">
-      <g transform="translate(200, 200)">
-        <path fill={entryColor(currentEntryIndex)} d={arc()}></path>
-      </g>
-    </svg>
+    <div id="app-container">
+      <div id="schedule-pane"><Schedule schedule={schedule} time={currentTime}></Schedule></div>
+      <div id="timer-pane">
+        <svg width="400" height="400" id="timer">
+          <g transform="translate(200, 200)">
+            <path fill={entryColor(currentEntryIndex)} d={arc()}></path>
+          </g>
+        </svg>
 
-    { remainingTime ?
-      <>
-        { +remainingTime < +NEXT_UP_TIME ?
-        <div id="current-activity"><ScheduleEntryName entry={currentEntry}></ScheduleEntryName></div>
-        <div id="time-left"><RemainingTime duration={remainingTime}></RemainingTime></div>
-          <p id="next-up"><span style={{color: entryColor(currentEntryIndex + 1)}}>⬤</span> Next up: <ScheduleEntryName entry={schedule[currentEntryIndex + 1]}></ScheduleEntryName></p> :
-          null }
-      </> :
-      <p id="current-activity">School has ended!</p> }
+        { remainingTime ?
+          <>
+            <div id="current-activity"><ScheduleEntryName entry={currentEntry}></ScheduleEntryName></div>
+            <div id="time-left"><RemainingTime duration={remainingTime}></RemainingTime></div>
+            { (+remainingTime < +NEXT_UP_TIME) ?
+              <p id="next-up"><span style={{color: entryColor(currentEntryIndex + 1)}}>⬤</span> Next up: <ScheduleEntryName entry={schedule[currentEntryIndex + 1]}></ScheduleEntryName></p> :
+              null }
+          </> :
+          <p id="current-activity">School has ended!</p> }
+      </div>
+    </div>
   </>;
 }
 
