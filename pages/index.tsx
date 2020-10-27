@@ -146,6 +146,9 @@ function HomePage() {
     }
   });
 
+  const minutes = Math.floor(totalTime?.as('minutes') ?? 0);
+  const ticks = useMemo(() => new Array(minutes).fill(0).map((_, i) => 360 * i / minutes), [minutes]);
+
   return <>
     <div id="clock">{currentTime.toFormat('h:mm a')}</div>
 
@@ -155,6 +158,9 @@ function HomePage() {
         <svg width="400" height="400" id="timer">
           <g transform="translate(200, 200)">
             <path fill={entryColor(currentEntryIndex)} d={arc()}></path>
+            <g>{ ticks.map(rot =>
+              <g transform={`rotate(${rot})`}><line stroke="black" y1="-200" y2="-190"></line></g>
+            )}</g>
           </g>
         </svg>
 
