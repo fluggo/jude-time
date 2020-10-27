@@ -2,3 +2,18 @@ body {
   background-color: black;
   color: white;
 }
+
+span.live {
+  font-size: 80%;
+  padding: 0.15em;
+  background-color: crimson;
+  border-radius: 0.25em;
+}
+
+.next-up {
+  text-align: center;
+  font-size: 30px;
+  margin-top: 20px;
+  border-top: 2px solid white;
+  border-bottom: 2px solid white;
+}

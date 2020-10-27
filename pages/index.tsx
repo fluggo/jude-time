@@ -1,6 +1,6 @@
 import * as d3shape from 'd3-shape';
 import * as d3scaleChromatic from 'd3-scale-chromatic';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DateTime, Duration } from 'luxon';
 
 function fromTime(time: string): DateTime {
@@ -10,6 +10,7 @@ function fromTime(time: string): DateTime {
 interface ScheduleEntry<DateType extends string | DateTime> {
   activity: string;
   startTime: DateType;
+  live?: boolean;
 }
 
 const TEST_SCHEDULE: ScheduleEntry<string>[] = [
@@ -26,18 +27,79 @@ const TEST_SCHEDULE: ScheduleEntry<string>[] = [
   { activity: 'School is over!', startTime: '2:55 PM' },
 ];
 
+const SPECIALS_SCHEDULE: ScheduleEntry<string>[] = [
+  { activity: 'Music', startTime: '1:10 PM', live: true },
+  { activity: 'P.E.', startTime: '1:10 PM', live: true },
+  { activity: 'DREAMS Lab', startTime: '1:10 PM', live: true },
+  { activity: 'Art', startTime: '1:10 PM', live: true },
+  { activity: 'P.E.', startTime: '1:10 PM', live: false },
+  { activity: 'Creative Expressions', startTime: '1:10 PM', live: true },
+];
+
+function generateSchedule(date: DateTime): ScheduleEntry<DateTime>[] {
+  const result: ScheduleEntry<DateTime>[] = [
+    { activity: 'Breakfast!', startTime: fromTime('7:20 AM') },
+    { activity: 'Morning Meeting', startTime: fromTime('7:40 AM'), live: true },
+  ];
+
+  const mwf = date.weekday === 1 || date.weekday === 3 || date.weekday === 5;
+
+  if(mwf) {
+    result.push({activity: 'Reading Workshop', startTime: fromTime('8:10 AM'), live: true});
+  }
+  else {
+    result.push({activity: date.weekday === 4 ? 'Writing Workshop (all 2nd)' : 'Writing Workshop', startTime: fromTime('8:10 AM'), live: true});
+  }
+
+  if(mwf) {
+    result.push({activity: 'Writing Workshop', startTime: fromTime('9:00 AM')});
+  }
+  else {
+    result.push({activity: 'Reading Workshop', startTime: fromTime('9:00 AM')});
+  }
+
+  if(mwf) {
+    result.push({activity: 'Phonics', startTime: fromTime('9:50 AM')});
+  }
+  else {
+    result.push({activity: 'Catch-up/Redo Time', startTime: fromTime('9:50 AM')});
+  }
+
+  result.push({activity: 'Math Workshop', startTime: fromTime('10:15 AM'), live: mwf});
+
+  result.push({activity: 'Lunch/Recess', startTime: fromTime('11:30 AM')});
+
+  const firstSpecial = 0;
+  const special = SPECIALS_SCHEDULE[(firstSpecial + date.weekday - 1) % SPECIALS_SCHEDULE.length];
+  result.push({ ...special, startTime: fromTime(special.startTime) });
+
+  result.push({activity: 'Science', startTime: fromTime('1:55 PM')});
+  result.push({activity: 'School is over!', startTime: fromTime('2:55 PM')});
+
+  return result;
+}
+
 function entryColor(index: number): string {
   return d3scaleChromatic.schemeCategory10[index % d3scaleChromatic.schemeCategory10.length];
 }
 
-const schedule: ScheduleEntry<DateTime>[] = TEST_SCHEDULE
-  .map(entry => ({activity: entry.activity, startTime: fromTime(entry.startTime)}));
-
 const NEXT_UP_TIME = Duration.fromObject({minutes: 5});
+
+function ScheduleEntryName({entry}: {entry: ScheduleEntry<DateTime>}) {
+  return <>{entry.activity} <span className="live">LIVE</span></>;
+}
+
+function RemainingTime({duration}: {duration: Duration}) {
+  return <>{duration.hours ? `${duration.hours} hour${duration.hours === 1 ? '' : 's'} ` : ''}
+    {duration.minutes >= 1 ? `${duration.minutes} minute${duration.minutes === 1 ? '' : 's'}` :
+      (duration.hours || 0 === 0) ? 'Less than one minute' : ''} left</>;
+}
 
 function HomePage() {
   const [currentTime, setCurrentTime] = useState(DateTime.local());
   const [currentEntryIndex, setCurrentEntryIndex] = useState(0);
+
+  const schedule = useMemo(() => generateSchedule(currentTime), [currentTime.day]);
 
   const currentEntry = schedule[currentEntryIndex];
 
@@ -83,12 +145,13 @@ function HomePage() {
 
     { remainingTime ?
       <>
-        <p style={ { fontSize: '72px', textAlign: 'center' }}>{currentEntry.activity}<br></br>
-          {remainingTime.hours ? `${remainingTime.hours} hour${remainingTime.hours === 1 ? '' : 's'} ` : ''}
-          {remainingTime.minutes >= 1 ? `${remainingTime.minutes} minute${remainingTime.minutes === 1 ? '' : 's'}` :
-            (remainingTime.hours || 0 === 0) ? 'Less than one minute' : ''} left</p>
+        <p style={ { fontSize: '72px', textAlign: 'center' }}>
+          <ScheduleEntryName entry={currentEntry}></ScheduleEntryName>
+          <br></br>
+          <RemainingTime duration={remainingTime}></RemainingTime>
+        </p>
         { +remainingTime < +NEXT_UP_TIME ?
-          <p style={{textAlign: 'center', fontSize: '30px', marginTop: '20px', borderTop: '2px solid white', borderBottom: '2px solid white'}}><span style={{color: entryColor(currentEntryIndex + 1)}}>⬤</span> Next up: {schedule[currentEntryIndex + 1].activity}</p> :
+          <p className="next-up"><span style={{color: entryColor(currentEntryIndex + 1)}}>⬤</span> Next up: <ScheduleEntryName entry={schedule[currentEntryIndex + 1]}></ScheduleEntryName></p> :
           null }
       </> :
       <p style={ {textAlign: 'center', fontSize: '72px' }}>School has ended!</p> }
