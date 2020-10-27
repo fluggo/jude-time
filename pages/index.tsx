@@ -1,7 +1,7 @@
 import * as d3shape from 'd3-shape';
 import * as d3scaleChromatic from 'd3-scale-chromatic';
 import React, { useState, useEffect } from 'react';
-import { DateTime } from 'luxon';
+import { DateTime, Duration } from 'luxon';
 
 function fromTime(time: string): DateTime {
   return DateTime.fromFormat(time, 'h:mm a', { zone: 'local' });
@@ -26,8 +26,14 @@ const TEST_SCHEDULE: ScheduleEntry<string>[] = [
   { activity: 'School is over!', startTime: '2:55 PM' },
 ];
 
+function entryColor(index: number): string {
+  return d3scaleChromatic.schemeCategory10[index % d3scaleChromatic.schemeCategory10.length];
+}
+
 const schedule: ScheduleEntry<DateTime>[] = TEST_SCHEDULE
   .map(entry => ({activity: entry.activity, startTime: fromTime(entry.startTime)}));
+
+const NEXT_UP_TIME = Duration.fromObject({minutes: 5});
 
 function HomePage() {
   const [currentTime, setCurrentTime] = useState(DateTime.local());
@@ -47,7 +53,7 @@ function HomePage() {
     .startAngle(2 * Math.PI * usedTime.milliseconds / (totalTime ? totalTime.milliseconds : 1))
     .endAngle(2 * Math.PI) as any;
 
-  const remainingTime = targetTime ? targetTime.diff(currentTime).shiftTo('hours', 'minutes', 'seconds').toObject() : null;
+  const remainingTime = targetTime ? targetTime.diff(currentTime).shiftTo('hours', 'minutes', 'seconds') : null;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -71,15 +77,21 @@ function HomePage() {
   return <>
     <svg width="400" height="400" style={ { display: 'block', marginLeft: 'auto', marginRight: 'auto', width: '400px' } }>
       <g transform="translate(200, 200)">
-        <path fill={d3scaleChromatic.schemeCategory10[currentEntryIndex % d3scaleChromatic.schemeCategory10.length]} d={arc()}></path>
+        <path fill={entryColor(currentEntryIndex)} d={arc()}></path>
       </g>
     </svg>
 
     { remainingTime ?
-      <p style={ { fontSize: '72px', textAlign: 'center' }}>{currentEntry.activity}<br></br>
-        {remainingTime.hours ? `${remainingTime.hours} hour${remainingTime.hours === 1 ? '' : 's'} ` : ''}
-        {remainingTime.minutes ? `${remainingTime.minutes} minute${remainingTime.minutes === 1 ? '' : 's'}` : ''} left</p> :
-      <p style={ { fontSize: '72px' }}>All done!</p> }
+      <>
+        <p style={ { fontSize: '72px', textAlign: 'center' }}>{currentEntry.activity}<br></br>
+          {remainingTime.hours ? `${remainingTime.hours} hour${remainingTime.hours === 1 ? '' : 's'} ` : ''}
+          {remainingTime.minutes >= 1 ? `${remainingTime.minutes} minute${remainingTime.minutes === 1 ? '' : 's'}` :
+            (remainingTime.hours || 0 === 0) ? 'Less than one minute' : ''} left</p>
+        { +remainingTime < +NEXT_UP_TIME ?
+          <p style={{textAlign: 'center', fontSize: '30px', marginTop: '20px', borderTop: '2px solid white', borderBottom: '2px solid white'}}><span style={{color: entryColor(currentEntryIndex + 1)}}>⬤</span> Next up: {schedule[currentEntryIndex + 1].activity}</p> :
+          null }
+      </> :
+      <p style={ {textAlign: 'center', fontSize: '72px' }}>School has ended!</p> }
   </>;
 }
 
