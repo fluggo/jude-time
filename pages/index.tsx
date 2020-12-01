@@ -105,12 +105,7 @@ function Schedule({schedule, time}: {schedule: ScheduleEntry<DateTime>[], time: 
   </>;
 }
 
-function HomePage() {
-  const [currentTime, setCurrentTime] = useState(DateTime.local());
-  const [currentEntryIndex, setCurrentEntryIndex] = useState(0);
-
-  const schedule = useMemo(() => generateSchedule(currentTime), [currentTime.day]);
-
+function Timer({schedule, currentEntryIndex, currentTime}: {schedule: ScheduleEntry<DateTime>[], currentEntryIndex: number, currentTime: DateTime}) {
   const currentEntry = schedule[currentEntryIndex];
 
   const startTime = currentEntry.startTime;
@@ -125,6 +120,30 @@ function HomePage() {
     .startAngle(2 * Math.PI * usedTime.milliseconds / (totalTime ? totalTime.milliseconds : 1))
     .endAngle(2 * Math.PI) as any;
 
+  const minutes = Math.floor(totalTime?.as('minutes') ?? 0);
+  const ticks = useMemo(() => new Array(minutes).fill(0).map((_, i) => 360 * i / minutes), [minutes]);
+
+  return <>
+    <svg width="400" height="400" id="timer">
+      <g transform="translate(200, 200)">
+        <path fill={entryColor(currentEntryIndex)} d={arc()}></path>
+        <g>{ticks.map((rot, i) =>
+          <g key={i} transform={`rotate(${rot})`}><line stroke="black" y1="-200" y2="-190"></line></g>
+        )}</g>
+      </g>
+    </svg>
+  </>;
+}
+
+function HomePage() {
+  const [currentTime, setCurrentTime] = useState(DateTime.local());
+  const [currentEntryIndex, setCurrentEntryIndex] = useState(0);
+
+  const schedule = useMemo(() => generateSchedule(currentTime), [currentTime.day]);
+
+  const currentEntry = schedule[currentEntryIndex];
+
+  const targetTime = (currentEntryIndex + 1) < schedule.length ? schedule[currentEntryIndex + 1].startTime : null;
   const remainingTime = targetTime ? targetTime.diff(currentTime).shiftTo('hours', 'minutes', 'seconds') : null;
 
   useEffect(() => {
@@ -149,23 +168,13 @@ function HomePage() {
     }
   });
 
-  const minutes = Math.floor(totalTime?.as('minutes') ?? 0);
-  const ticks = useMemo(() => new Array(minutes).fill(0).map((_, i) => 360 * i / minutes), [minutes]);
-
   return <>
     <div id="clock">{currentTime.toFormat('h:mm a')}</div>
 
     <div id="app-container">
       <div id="schedule-pane"><Schedule schedule={schedule} time={currentTime}></Schedule></div>
       <div id="timer-pane">
-        <svg width="400" height="400" id="timer">
-          <g transform="translate(200, 200)">
-            <path fill={entryColor(currentEntryIndex)} d={arc()}></path>
-            <g>{ ticks.map((rot, i) =>
-              <g key={i} transform={`rotate(${rot})`}><line stroke="black" y1="-200" y2="-190"></line></g>
-            )}</g>
-          </g>
-        </svg>
+        <Timer schedule={schedule} currentEntryIndex={currentEntryIndex} currentTime={currentTime}></Timer>
 
         { remainingTime ?
           <>
