@@ -134,6 +134,9 @@ function HomePage() {
 
       let entry = currentEntryIndex;
 
+      if(newTime < schedule[0].startTime)
+        entry = 0;
+
       while(entry + 1 < schedule.length && schedule[entry + 1].startTime < newTime)
         entry++;
 
