@@ -1,10 +1,18 @@
 import * as d3shape from 'd3-shape';
 import * as d3scaleChromatic from 'd3-scale-chromatic';
 import React, { useState, useEffect, useMemo } from 'react';
-import { DateTime, Duration } from 'luxon';
+import { DateTime, Duration, DurationUnit } from 'luxon';
 
 function fromTime(time: string): DateTime {
   return DateTime.fromFormat(time, 'h:mm a', { zone: 'local' });
+}
+
+function floorTime(time: DateTime, interval: DurationUnit) {
+  return time.plus(0).startOf(interval);
+}
+
+function ceilTime(time: DateTime, interval: DurationUnit) {
+  return time.plus(Duration.fromObject({[interval]: 1})).startOf(interval);
 }
 
 interface ScheduleEntry<DateType extends string | DateTime> {
@@ -105,30 +113,58 @@ function Schedule({schedule, time}: {schedule: ScheduleEntry<DateTime>[], time: 
   </>;
 }
 
-function Timer({schedule, currentEntryIndex, currentTime}: {schedule: ScheduleEntry<DateTime>[], currentEntryIndex: number, currentTime: DateTime}) {
+const SECONDS_PER_HOUR = 60 * 60;
+const SECONDS_PER_HALF_DAY = 12 * SECONDS_PER_HOUR;
+
+const SMALL_TICKS = new Array(60).fill(0).map((_, i) => 360 * i / 60);
+const LARGE_TICKS = new Array(12).fill(0).map((_, i) => 360 * i / 12);
+
+function clockMinutePosition(time: DateTime, basis?: DateTime): number {
+  basis = floorTime(basis ?? time, 'hour');
+  const minuteHandSeconds = time.diff(basis).as('second');
+  return minuteHandSeconds / SECONDS_PER_HOUR;
+}
+
+function Timer({schedule, currentEntryIndex, currentTime, showNext}: {schedule: ScheduleEntry<DateTime>[], currentEntryIndex: number, currentTime: DateTime, showNext: boolean}) {
   const currentEntry = schedule[currentEntryIndex];
 
   const startTime = currentEntry.startTime;
   const targetTime = (currentEntryIndex + 1) < schedule.length ? schedule[currentEntryIndex + 1].startTime : null;
+  const nextEntryTargetTime = (currentEntryIndex + 2) < schedule.length ? schedule[currentEntryIndex + 2].startTime : null;
 
   const totalTime = targetTime ? targetTime.diff(startTime) : null;
   const usedTime = currentTime.diff(startTime);
 
   const arc = d3shape.arc()
-    .innerRadius(0)
-    .outerRadius(200)
-    .startAngle(2 * Math.PI * usedTime.milliseconds / (totalTime ? totalTime.milliseconds : 1))
-    .endAngle(2 * Math.PI) as any;
+    .innerRadius(0) as any;
 
   const minutes = Math.floor(totalTime?.as('minutes') ?? 0);
-  const ticks = useMemo(() => new Array(minutes).fill(0).map((_, i) => 360 * i / minutes), [minutes]);
+
+  const minuteHand = clockMinutePosition(currentTime);
+  const hourHandSeconds = currentTime.diff(floorTime(currentTime, 'day')).as('second');
+
+  const CLOCK_RADIUS = 170;
+  const TEXT_RADIUS = 187;
 
   return <>
-    <svg width="400" height="400" id="timer">
+    <svg width="400" height="400" viewBox="0 0 400 400" id="timer">
       <g transform="translate(200, 200)">
-        <path fill={entryColor(currentEntryIndex)} d={arc()}></path>
-        <g>{ticks.map((rot, i) =>
-          <g key={i} transform={`rotate(${rot})`}><line stroke="black" y1="-200" y2="-190"></line></g>
+        {/* <path fill={entryColor(currentEntryIndex)} d={arc()}></path> */}
+        <circle cx="0" cy="0" r={CLOCK_RADIUS + 3} fill="white"></circle>
+        { (nextEntryTargetTime && targetTime) ?
+          <path opacity="0.2" fill={entryColor(currentEntryIndex + 1)} d={arc({outerRadius: 100, startAngle: 2 * Math.PI * clockMinutePosition(targetTime, startTime), endAngle: 2 * Math.PI * clockMinutePosition(nextEntryTargetTime, startTime)})}></path> : null }
+        { targetTime ?
+          <path fill={entryColor(currentEntryIndex)} d={arc({outerRadius: 120, startAngle: 2 * Math.PI * clockMinutePosition(currentTime, startTime), endAngle: 2 * Math.PI * clockMinutePosition(targetTime, startTime)})}></path> : null }
+        <g>{SMALL_TICKS.map((rot, i) =>
+          <line key={i} transform={`rotate(${rot})`} stroke="black" y1={CLOCK_RADIUS} y2={CLOCK_RADIUS - 10}></line>
+        )}</g>
+        <g>{LARGE_TICKS.map((rot, i) =>
+          <line key={i} transform={`rotate(${rot})`} stroke="black" stroke-width="2" y1={CLOCK_RADIUS} y2={CLOCK_RADIUS - 20}></line>
+        )}</g>
+        <line transform={`rotate(${360 * minuteHand})`} stroke="black" strokeWidth="4" y1="20" y2={-(CLOCK_RADIUS - 30)}></line>
+        <line transform={`rotate(${360 * hourHandSeconds / SECONDS_PER_HALF_DAY})`} stroke="black" strokeWidth="8" y1="20" y2={-(CLOCK_RADIUS - 100)}></line>
+        <g>{LARGE_TICKS.map((_, i) =>
+          <text fill="white" x={TEXT_RADIUS * Math.sin(2 * Math.PI * i / 12)} y={TEXT_RADIUS * -Math.cos(2 * Math.PI * i / 12)} fontSize="1.5rem" textAnchor="middle" dominantBaseline="middle">{i == 0 ? 12 : i}</text>
         )}</g>
       </g>
     </svg>
@@ -168,19 +204,21 @@ function HomePage() {
     }
   });
 
+  const showNext = remainingTime && (+remainingTime < +NEXT_UP_TIME) || false;
+
   return <>
     <div id="clock">{currentTime.toFormat('h:mm a')}</div>
 
     <div id="app-container">
       <div id="schedule-pane"><Schedule schedule={schedule} time={currentTime}></Schedule></div>
       <div id="timer-pane">
-        <Timer schedule={schedule} currentEntryIndex={currentEntryIndex} currentTime={currentTime}></Timer>
+        <Timer schedule={schedule} currentEntryIndex={currentEntryIndex} currentTime={currentTime} showNext={showNext}></Timer>
 
         { remainingTime ?
           <>
             <div id="current-activity"><ScheduleEntryName entry={currentEntry}></ScheduleEntryName></div>
             <div id="time-left"><RemainingTime duration={remainingTime}></RemainingTime></div>
-            { (+remainingTime < +NEXT_UP_TIME) ?
+            { showNext ?
               <p id="next-up"><span style={{color: entryColor(currentEntryIndex + 1)}}>⬤</span> Next up: <ScheduleEntryName entry={schedule[currentEntryIndex + 1]}></ScheduleEntryName></p> :
               null }
           </> :
