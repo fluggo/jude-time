@@ -143,13 +143,12 @@ function Timer({schedule, currentEntryIndex, currentTime, showNext}: {schedule: 
   const minuteHand = clockMinutePosition(currentTime);
   const hourHandSeconds = currentTime.diff(floorTime(currentTime, 'day')).as('second');
 
-  const CLOCK_RADIUS = 170;
+  const CLOCK_RADIUS = 165;
   const TEXT_RADIUS = 187;
 
   return <>
-    <svg width="400" height="400" viewBox="0 0 400 400" id="timer">
+    <svg viewBox="0 0 400 400" id="timer">
       <g transform="translate(200, 200)">
-        {/* <path fill={entryColor(currentEntryIndex)} d={arc()}></path> */}
         <circle cx="0" cy="0" r={CLOCK_RADIUS + 3} fill="white"></circle>
         { (nextEntryTargetTime && targetTime) ?
           <path opacity="0.2" fill={entryColor(currentEntryIndex + 1)} d={arc({outerRadius: 100, startAngle: 2 * Math.PI * clockMinutePosition(targetTime, startTime), endAngle: 2 * Math.PI * clockMinutePosition(nextEntryTargetTime, startTime)})}></path> : null }
