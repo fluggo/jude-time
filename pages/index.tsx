@@ -161,8 +161,8 @@ function HomePage() {
         <svg width="400" height="400" id="timer">
           <g transform="translate(200, 200)">
             <path fill={entryColor(currentEntryIndex)} d={arc()}></path>
-            <g>{ ticks.map(rot =>
-              <g transform={`rotate(${rot})`}><line stroke="black" y1="-200" y2="-190"></line></g>
+            <g>{ ticks.map((rot, i) =>
+              <g key={i} transform={`rotate(${rot})`}><line stroke="black" y1="-200" y2="-190"></line></g>
             )}</g>
           </g>
         </svg>
