@@ -12,7 +12,7 @@ function floorTime(time: DateTime, interval: DurationUnit) {
 }
 
 function ceilTime(time: DateTime, interval: DurationUnit) {
-  return time.plus(Duration.fromObject({[interval]: 1})).startOf(interval);
+  return time.plus({[interval]: 1}).startOf(interval);
 }
 
 interface ScheduleEntry<DateType extends string | DateTime> {
@@ -125,20 +125,31 @@ function clockMinutePosition(time: DateTime, basis?: DateTime): number {
   return minuteHandSeconds / SECONDS_PER_HOUR;
 }
 
+function lerp(x1: number, x2: number, t: number): number {
+  if(t < 0)
+    return x1;
+
+  if(t > 1)
+    return x2;
+
+  return x1 * (1 - t) + x2 * t;
+}
+
 function Timer({schedule, currentEntryIndex, currentTime, showNext}: {schedule: ScheduleEntry<DateTime>[], currentEntryIndex: number, currentTime: DateTime, showNext: boolean}) {
   const currentEntry = schedule[currentEntryIndex];
 
   const startTime = currentEntry.startTime;
   const targetTime = (currentEntryIndex + 1) < schedule.length ? schedule[currentEntryIndex + 1].startTime : null;
-  const nextEntryTargetTime = (currentEntryIndex + 2) < schedule.length ? schedule[currentEntryIndex + 2].startTime : null;
 
-  const totalTime = targetTime ? targetTime.diff(startTime) : null;
-  const usedTime = currentTime.diff(startTime);
+  const oneHourFromNow = currentTime.plus({hour: 1});
+
+  const extraEntries = schedule.slice(0, -1)
+    .map((entry, i) => ({startTime: entry.startTime, endTime: schedule[i + 1].startTime, color: entryColor(i)}))
+    .filter((entry, i) => i > currentEntryIndex && entry.startTime < oneHourFromNow)
+    .map(entry => ({...entry, endTime: DateTime.min(entry.endTime, oneHourFromNow)}));
 
   const arc = d3shape.arc()
     .innerRadius(0) as any;
-
-  const minutes = Math.floor(totalTime?.as('minutes') ?? 0);
 
   const minuteHand = clockMinutePosition(currentTime);
   const hourHandSeconds = currentTime.diff(floorTime(currentTime, 'day')).as('second');
@@ -150,15 +161,17 @@ function Timer({schedule, currentEntryIndex, currentTime, showNext}: {schedule: 
     <svg viewBox="0 0 400 400" id="timer">
       <g transform="translate(200, 200)">
         <circle cx="0" cy="0" r={CLOCK_RADIUS + 3} fill="white"></circle>
-        { (nextEntryTargetTime && targetTime) ?
-          <path opacity="0.2" fill={entryColor(currentEntryIndex + 1)} d={arc({outerRadius: 100, startAngle: 2 * Math.PI * clockMinutePosition(targetTime, startTime), endAngle: 2 * Math.PI * clockMinutePosition(nextEntryTargetTime, startTime)})}></path> : null }
+        { extraEntries.map(entry => {
+            const lerpFactor = 1 - entry.startTime.diff(currentTime).as('seconds') / 300;
+            return <path opacity={lerp(0.2, 1, lerpFactor)} fill={entry.color} d={arc({outerRadius: lerp(100, 120, lerpFactor), startAngle: 2 * Math.PI * clockMinutePosition(entry.startTime, startTime), endAngle: 2 * Math.PI * clockMinutePosition(entry.endTime, startTime)})}></path>
+          }) }
         { targetTime ?
           <path fill={entryColor(currentEntryIndex)} d={arc({outerRadius: 120, startAngle: 2 * Math.PI * clockMinutePosition(currentTime, startTime), endAngle: 2 * Math.PI * clockMinutePosition(targetTime, startTime)})}></path> : null }
         <g>{SMALL_TICKS.map((rot, i) =>
           <line key={i} transform={`rotate(${rot})`} stroke="black" y1={CLOCK_RADIUS} y2={CLOCK_RADIUS - 10}></line>
         )}</g>
         <g>{LARGE_TICKS.map((rot, i) =>
-          <line key={i} transform={`rotate(${rot})`} stroke="black" stroke-width="2" y1={CLOCK_RADIUS} y2={CLOCK_RADIUS - 20}></line>
+          <line key={i} transform={`rotate(${rot})`} stroke="black" strokeWidth="2" y1={CLOCK_RADIUS} y2={CLOCK_RADIUS - 20}></line>
         )}</g>
         <line transform={`rotate(${360 * minuteHand})`} stroke="black" strokeWidth="4" y1="20" y2={-(CLOCK_RADIUS - 30)}></line>
         <line transform={`rotate(${360 * hourHandSeconds / SECONDS_PER_HALF_DAY})`} stroke="black" strokeWidth="8" y1="20" y2={-(CLOCK_RADIUS - 100)}></line>
