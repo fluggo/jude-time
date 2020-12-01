@@ -176,7 +176,7 @@ function Timer({schedule, currentEntryIndex, currentTime, showNext}: {schedule: 
         <line transform={`rotate(${360 * minuteHand})`} stroke="black" strokeWidth="4" y1="20" y2={-(CLOCK_RADIUS - 30)}></line>
         <line transform={`rotate(${360 * hourHandSeconds / SECONDS_PER_HALF_DAY})`} stroke="black" strokeWidth="8" y1="20" y2={-(CLOCK_RADIUS - 100)}></line>
         <g>{LARGE_TICKS.map((_, i) =>
-          <text fill="white" x={TEXT_RADIUS * Math.sin(2 * Math.PI * i / 12)} y={TEXT_RADIUS * -Math.cos(2 * Math.PI * i / 12)} fontSize="1.5rem" textAnchor="middle" dominantBaseline="middle">{i == 0 ? 12 : i}</text>
+          <text key={i} fill="white" x={TEXT_RADIUS * Math.sin(2 * Math.PI * i / 12)} y={TEXT_RADIUS * -Math.cos(2 * Math.PI * i / 12)} fontSize="1.5rem" textAnchor="middle" dominantBaseline="middle">{i == 0 ? 12 : i}</text>
         )}</g>
       </g>
     </svg>
